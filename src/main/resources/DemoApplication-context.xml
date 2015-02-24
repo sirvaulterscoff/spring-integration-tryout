@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:aop="http://www.springframework.org/schema/tx"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/integration
+			http://www.springframework.org/schema/integration/spring-integration.xsd
+			http://www.springframework.org/schema/integration/file
+			http://www.springframework.org/schema/integration/file/spring-integration-file.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<int:control-bus />
+	<context:component-scan base-package="demo"/>
+	<aop:annotation-driven transaction-manager="transactionManager"/>
+	<int:inbound-channel-adapter expression="inboundSourceFactory.getObject()"/>
+	<!--<int:inbound-channel-adapter  auto-startup="true">-->
+		<!--<int:poller fixed-rate="1000">-->
+			<!--<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory"/>-->
+		<!--</int:poller>-->
+	<!--</int:inbound-channel-adapter>-->
+	<!--<int-file:inbound-channel-adapter directory="/tmp/test" auto-create-directory="true" auto-startup="true"-->
+	                                  <!--channel="putFile" filter="fileOnlyFilter">-->
+		<!--<int:poller fixed-rate="1000">-->
+			<!--<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />-->
+		<!--</int:poller>-->
+		<!--<int-file:nio-locker/>-->
+	<!--</int-file:inbound-channel-adapter>-->
+
+	<bean id="fileOnlyFilter" class="demo.DirOnlyFileFilter"/>
+
+	<int:channel id="putFile"/>
+
+	<int:chain input-channel="putFile">
+		<int:header-enricher>
+			<int:header name="file_type" expression="T(org.apache.commons.io.FilenameUtils).getExtension(payload.getName())"/>
+			<int:header name="fullPath" expression="payload.getAbsolutePath()"/>
+			<!--<int:header name="file_type" expression="#{T(org.apache.commons.io.FilenameUtils).getExtension(@payload)}"/>-->
+		</int:header-enricher>
+		<int-file:file-to-bytes-transformer delete-files="false"/>
+
+		<int:header-value-router id="shipmant-tff-router" header-name="file_type" resolution-required="false" default-output-channel="putTFF">
+			<int:mapping value="shipment" channel="putShipment"/>
+			<int:mapping value="revising" channel="applyRevising"/>
+		</int:header-value-router>
+	</int:chain>
+
+	<int:channel id="putShipment"/>
+	<int:channel id="putTFF"/>
+	<int:channel id="applyRevising"/>
+
+	<int:service-activator input-channel="putShipment"
+	                       ref="receiveShipmentHandler"/>
+
+	<int:service-activator input-channel="putTFF"
+	                       ref="receiveTffHandler"/>
+
+	<int:service-activator input-channel="applyRevising"
+	                       ref="receiveRevisingHandler"/>
+
+	<bean id="receiveShipmentHandler" class="demo.RecieveShipmentHandler"/>
+	<bean id="receiveTffHandler" class="demo.ReceiveTffHandler"/>
+	<bean id="receiveRevisingHandler" class="demo.ReceiveRevisingHandler"/>
+
+	<int:transaction-synchronization-factory id="syncFactory">
+		<int:after-commit expression="payload.delete()" />
+		<int:after-rollback channel="errFile"/>
+	</int:transaction-synchronization-factory>
+
+	<int-file:outbound-channel-adapter id="errFile" auto-create-directory="true" directory="/tmp/test/failed" delete-source-files="true"/>
+</beans>
