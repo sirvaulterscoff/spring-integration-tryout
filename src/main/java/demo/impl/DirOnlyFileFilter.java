@@ -1,4 +1,4 @@
-package demo;
+package demo.impl;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;

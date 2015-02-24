@@ -11,24 +11,25 @@
 			http://www.springframework.org/schema/integration/file
 			http://www.springframework.org/schema/integration/file/spring-integration-file.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-	<int:control-bus />
-	<context:component-scan base-package="demo"/>
+	<context:component-scan base-package="demo.impl" annotation-config="true"/>
 	<aop:annotation-driven transaction-manager="transactionManager"/>
-	<int:inbound-channel-adapter expression="inboundSourceFactory.getObject()"/>
-	<!--<int:inbound-channel-adapter  auto-startup="true">-->
-		<!--<int:poller fixed-rate="1000">-->
-			<!--<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory"/>-->
-		<!--</int:poller>-->
-	<!--</int:inbound-channel-adapter>-->
-	<!--<int-file:inbound-channel-adapter directory="/tmp/test" auto-create-directory="true" auto-startup="true"-->
-	                                  <!--channel="putFile" filter="fileOnlyFilter">-->
-		<!--<int:poller fixed-rate="1000">-->
-			<!--<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />-->
-		<!--</int:poller>-->
-		<!--<int-file:nio-locker/>-->
-	<!--</int-file:inbound-channel-adapter>-->
 
-	<bean id="fileOnlyFilter" class="demo.DirOnlyFileFilter"/>
+	<int-file:inbound-channel-adapter directory="/tmp/test" auto-create-directory="true" auto-startup="true"
+	                                  channel="putFile" filter="fileOnlyFilter">
+		<int:poller fixed-rate="1000">
+			<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />
+		</int:poller>
+		<int-file:nio-locker/>
+	</int-file:inbound-channel-adapter>
+	<int-file:inbound-channel-adapter directory="/tmp/test2" auto-create-directory="true" auto-startup="true"
+	                                  channel="putFile" filter="fileOnlyFilter">
+		<int:poller fixed-rate="1000">
+			<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />
+		</int:poller>
+		<int-file:nio-locker/>
+	</int-file:inbound-channel-adapter>
+
+	<bean id="fileOnlyFilter" class="demo.impl.DirOnlyFileFilter"/>
 
 	<int:channel id="putFile"/>
 
@@ -59,9 +60,9 @@
 	<int:service-activator input-channel="applyRevising"
 	                       ref="receiveRevisingHandler"/>
 
-	<bean id="receiveShipmentHandler" class="demo.RecieveShipmentHandler"/>
-	<bean id="receiveTffHandler" class="demo.ReceiveTffHandler"/>
-	<bean id="receiveRevisingHandler" class="demo.ReceiveRevisingHandler"/>
+	<bean id="receiveShipmentHandler" class="demo.impl.RecieveShipmentHandler"/>
+	<bean id="receiveTffHandler" class="demo.impl.ReceiveTffHandler"/>
+	<bean id="receiveRevisingHandler" class="demo.impl.ReceiveRevisingHandler"/>
 
 	<int:transaction-synchronization-factory id="syncFactory">
 		<int:after-commit expression="payload.delete()" />
