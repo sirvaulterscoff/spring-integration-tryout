@@ -17,8 +17,8 @@ import java.util.List;
  * @author pobedenniy.alexey
  * @since 23.02.2015
  */
-public class DirOnlyFileFilter implements FileListFilter<File> {
-	protected static final Logger log = LoggerFactory.getLogger(DirOnlyFileFilter.class);
+public class FileOnlyFileFilter implements FileListFilter<File> {
+	protected static final Logger log = LoggerFactory.getLogger(FileOnlyFileFilter.class);
 
 	@Override
 	public List<File> filterFiles(File[] files) {

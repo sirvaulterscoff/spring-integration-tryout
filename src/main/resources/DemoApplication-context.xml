@@ -4,32 +4,19 @@
        xmlns:int="http://www.springframework.org/schema/integration"
        xmlns:int-file="http://www.springframework.org/schema/integration/file" xmlns:aop="http://www.springframework.org/schema/tx"
        xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task" xmlns:jpa="http://www.springframework.org/schema/data/jpa"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
 			http://www.springframework.org/schema/beans/spring-beans.xsd
 			http://www.springframework.org/schema/integration
 			http://www.springframework.org/schema/integration/spring-integration.xsd
 			http://www.springframework.org/schema/integration/file
-			http://www.springframework.org/schema/integration/file/spring-integration-file.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+			http://www.springframework.org/schema/integration/file/spring-integration-file.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
 
 	<context:component-scan base-package="demo.impl" annotation-config="true"/>
+	<jpa:repositories base-package="demo.jpa"/>
 	<aop:annotation-driven transaction-manager="transactionManager"/>
 
-	<int-file:inbound-channel-adapter directory="/tmp/test" auto-create-directory="true" auto-startup="true"
-	                                  channel="putFile" filter="fileOnlyFilter">
-		<int:poller fixed-rate="1000">
-			<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />
-		</int:poller>
-		<int-file:nio-locker/>
-	</int-file:inbound-channel-adapter>
-	<int-file:inbound-channel-adapter directory="/tmp/test2" auto-create-directory="true" auto-startup="true"
-	                                  channel="putFile" filter="fileOnlyFilter">
-		<int:poller fixed-rate="1000">
-			<int:transactional transaction-manager="transactionManager" synchronization-factory="syncFactory" />
-		</int:poller>
-		<int-file:nio-locker/>
-	</int-file:inbound-channel-adapter>
-
-	<bean id="fileOnlyFilter" class="demo.impl.DirOnlyFileFilter"/>
+	<bean id="fileOnlyFilter" class="demo.impl.FileOnlyFileFilter"/>
 
 	<int:channel id="putFile"/>
 
@@ -37,7 +24,6 @@
 		<int:header-enricher>
 			<int:header name="file_type" expression="T(org.apache.commons.io.FilenameUtils).getExtension(payload.getName())"/>
 			<int:header name="fullPath" expression="payload.getAbsolutePath()"/>
-			<!--<int:header name="file_type" expression="#{T(org.apache.commons.io.FilenameUtils).getExtension(@payload)}"/>-->
 		</int:header-enricher>
 		<int-file:file-to-bytes-transformer delete-files="false"/>
 
@@ -63,11 +49,4 @@
 	<bean id="receiveShipmentHandler" class="demo.impl.RecieveShipmentHandler"/>
 	<bean id="receiveTffHandler" class="demo.impl.ReceiveTffHandler"/>
 	<bean id="receiveRevisingHandler" class="demo.impl.ReceiveRevisingHandler"/>
-
-	<int:transaction-synchronization-factory id="syncFactory">
-		<int:after-commit expression="payload.delete()" />
-		<int:after-rollback channel="errFile"/>
-	</int:transaction-synchronization-factory>
-
-	<int-file:outbound-channel-adapter id="errFile" auto-create-directory="true" directory="/tmp/test/failed" delete-source-files="true"/>
 </beans>

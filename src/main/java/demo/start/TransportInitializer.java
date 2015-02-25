@@ -30,10 +30,20 @@ public class TransportInitializer {
 		StandardEnvironment env = new StandardEnvironment();
 		HashMap<String, Object> params = new HashMap<String, Object>();
 		params.put("dir.in", "/tmp/testin1");
-		params.put("poll.freq", 1000L);
+		params.put("poll.freq", 500L);
 		params.put("channel.name", "file-in-1");
 		env.getPropertySources().addLast(new MapPropertySource("file1", params));
 		file1.setEnvironment(env);
 		file1.refresh();
+
+		ConfigurableApplicationContext file2 = new ClassPathXmlApplicationContext(new String[]{"file-inbound-context.xml"}, false, main);
+		env = new StandardEnvironment();
+		params = new HashMap<String, Object>();
+		params.put("dir.in", "/tmp/testin2");
+		params.put("poll.freq", 500L);
+		params.put("channel.name", "file-in-2");
+		env.getPropertySources().addLast(new MapPropertySource("file2", params));
+		file2.setEnvironment(env);
+		file2.refresh();
 	}
 }
